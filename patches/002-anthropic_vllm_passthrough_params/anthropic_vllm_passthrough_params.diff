@@ -1,0 +1,16 @@
+--- a/litellm/types/llms/anthropic.py
++++ b/litellm/types/llms/anthropic.py
+@@ -372,6 +372,13 @@
+     output_config: AnthropicOutputConfig | None  # Configuration for Claude's output behavior
+     cache_control: dict[str, Any] | None  # Automatic prompt caching
+     reasoning_effort: str | None
++    chat_template_kwargs: dict[str, Any] | None
++    enable_thinking: bool | None
++    preserve_thinking: bool | None
++    thinking_token_budget: int | None
++    min_p: float | None
++    presence_penalty: float | None
++    repetition_penalty: float | None
+ 
+ 
+ class AnthropicMessagesRequest(AnthropicMessagesRequestOptionalParams, total=False):
