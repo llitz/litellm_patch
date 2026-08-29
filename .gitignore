@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+team_prompt_params.json
+AGENTS.md
+DEVELOP.md

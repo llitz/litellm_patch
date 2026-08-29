@@ -1,15 +1,17 @@
 # 001 — zai_thinking_fix
 
-Z.AI's OpenAI-compatible API does not accept `thinking` and `reasoning_effort` as standard request parameters, so litellm silently dropped them. This callback (registered via `litellm_settings.callbacks` in `litellm-config.yaml`) moves both into `extra_body` just before the call so they arrive as raw JSON fields, for Z.AI models only.
+Z.AI's OpenAI-compatible API does not accept `thinking` and `reasoning_effort` as standard OpenAI request parameters, so litellm silently dropped them. This callback moves both into `extra_body` just before the call so they arrive as raw JSON fields, for Z.AI models only.
 
 Created and tested on litellm v1.97.0.
 
-## Docker mount
+## Deploying
 
-Mount the hook at the app root and reference it from the config (see `~/docker/litellm/docker-compose.yml`):
+1. Copy `zai_thinking_hook.py` into a directory mounted read-only at `/app/callbacks/`.
 
-    - ./files/litellm/zai_thinking_hook.py:/app/zai_thinking_hook.py:ro
+2. Reference it in the litellm config — the module path is relative to the config file's directory (`/app/config.yaml` → `/app/callbacks/`):
 
-    litellm_settings:
-      callbacks:
-        - "zai_thinking_hook.zai_thinking_hook_instance"
+       litellm_settings:
+         callbacks:
+           - "callbacks.zai_thinking_hook.zai_thinking_hook_instance"
+
+Restarts required to load; see `DEVELOP.md` at the repo root for our deployment specifics.

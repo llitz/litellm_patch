@@ -1,0 +1,24 @@
+[
+  {
+    "match_team_ids": [],
+    "match_key_aliases": ["dev-key"],
+    "extra_system_prompt": "You are a concise assistant. Answer directly, no preamble.",
+    "strip_params": ["temperature", "top_p"],
+    "force_params": {}
+  },
+  {
+    "match_team_ids": [],
+    "match_key_aliases": ["support-key"],
+    "extra_system_prompt": "You are a careful assistant. Double-check your work before answering. Ask for clarification when the request is ambiguous.",
+    "strip_params": [],
+    "force_params": {"temperature": 0.3, "max_tokens": 2048}
+  },
+  {
+    "match_team_ids": ["123e4567-e89b-12d3-a456-426614174000"],
+    "match_key_aliases": [],
+    "extra_system_prompt": "You are an internal tool. Refuse anything unrelated to company infrastructure work.",
+    "strip_params": ["reasoning_effort"],
+    "force_params": {},
+    "final": true
+  }
+]

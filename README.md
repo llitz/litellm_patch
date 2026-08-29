@@ -1,37 +1,109 @@
 # litellm patches
 
-Local modifications to the litellm proxy image (`ghcr.io/berriai/litellm-non_root:main-stable`), applied by mounting files into the container. The live mounts are declared in `~/docker/litellm/docker-compose.yml`.
+Local modifications to the [LiteLLM](https://github.com/BerriAI/litellm) proxy
+image (`ghcr.io/berriai/litellm-non_root:main-stable`), applied by mounting
+files into the container instead of maintaining a fork.
 
-**All patches here were created and tested against litellm v1.97.0; both diffs verified to apply cleanly to the v1.97.0 source (`patch -p1`).**
+## What's here
 
-> **Disclaimer:** these patches were written by qwen-3.8-27b with only overall guidance on how/where/what to patch. Use at your own risk.
+Two kinds of modifications:
 
-## patches/
+- `patches/` — full-file overrides of litellm modules, one numbered directory
+  per patch (patched file + a `.diff` against the stock version).
+- `callbacks/` — request-hook files loaded via `litellm_settings.callbacks`,
+  one numbered directory per callback.
 
-### 001-alias_token_count
+### patches/
 
-Model names created with `model_group_alias` (e.g. `qwen-27b`) were missing `max_input_tokens` in the `/v1/models` response, because the limit lookup only checked real deployments and never resolved aliases. The patch makes the lookup resolve the alias to its target group first, so aliases publish the same token limits as the model they point to.
+#### 001-alias_token_count
 
-### 002-anthropic_vllm_passthrough_params
+Model names created with `model_group_alias` (e.g. `qwen-27b`) were missing
+`max_input_tokens`/`max_output_tokens` in the `/v1/models` response, because
+the limit lookup only checked real deployments and never resolved aliases.
+A 4-line patch resolves the alias to its target group first, so alias rows
+publish the token limits of the model they point to. Base: litellm v1.97.0.
 
-The `AnthropicMessagesRequest` type did not know about vLLM-specific parameters, so requests through the Anthropic-format endpoint (`/v1/messages`) had `enable_thinking` and friends stripped out. The patch adds seven optional fields to the type so those parameters pass through to the vLLM backend.
+#### 002-anthropic_vllm_passthrough_params
 
-## callbacks/
+The `AnthropicMessagesRequest` type did not know about vLLM-specific
+parameters, so requests through the Anthropic-format endpoint (`/v1/messages`)
+had `enable_thinking` and friends stripped out. Adds seven optional fields to
+the type so those parameters pass through to the vLLM backend.
+Base: litellm v1.97.0.
 
-### 001_zai_thinking_fix
+### callbacks/
 
-Z.AI's API does not accept `thinking` and `reasoning_effort` as standard OpenAI request parameters, so litellm silently dropped them. This callback moves both into the raw request body (`extra_body`) just before the call, for Z.AI models only.
+#### 001_zai_thinking_fix
 
-## Docker mounts
+Z.AI's OpenAI-compatible API does not accept `thinking` and `reasoning_effort`
+as standard OpenAI request parameters, so litellm silently dropped them. This
+callback moves both into the raw request body (`extra_body`) just before the
+call, for Z.AI models only. Tested on litellm v1.97.0.
 
-Each file is mounted read-only over its counterpart inside the image (see `~/docker/litellm/docker-compose.yml`):
+#### 002_team_prompt_params
 
-| Local file | Mounted at (in container) |
-|---|---|
-| `patches/001-alias_token_count/router.py` | `/app/.venv/lib/python3.13/site-packages/litellm/router.py` |
-| `patches/002-anthropic_vllm_passthrough_params/anthropic.py` | `/app/.venv/lib/python3.13/site-packages/litellm/types/llms/anthropic.py` |
-| `callbacks/001_zai_thinking_fix/zai_thinking_hook.py` | `/app/zai_thinking_hook.py` |
+For callers matched by `team_id` or `key_alias`, prepends a configured system
+prompt to chat completion requests and locks selected request parameters
+(strip, then force) just before the call. Non-matching callers pass through
+unchanged. Config is a JSON list of rules, hot-reloadable on SIGHUP. See
+`team_prompt_params.json.sample`. Tested on litellm v1.98.0.
 
-The callback is additionally wired up in `litellm-config.yaml` via `litellm_settings.callbacks: ["zai_thinking_hook.zai_thinking_hook_instance"]`.
+#### 003_usage_details_patch
 
-**When updating the image:** mounted files shadow the image's files entirely. After pulling a new `main-stable`, re-check each patch still applies (or whether upstream fixed it and the mount can be dropped).
+Streaming usage from OpenAI-compatible providers (zai, hosted_vllm) arrived
+as the OpenAI SDK's `CompletionUsage` pydantic object, which litellm's
+`ChunkProcessor._usage_chunk_calculation_helper` cannot read (dict-only
+guards) — `prompt_tokens_details.cached_tokens` was silently dropped and token
+counts fell back to local recounting. This callback monkeypatches the helper
+with a coercion-safe version at import time, restoring cache-read reporting
+and correct token counts on streaming responses. Tested on `main-stable`
+2026-08 (v1.98.x).
+
+## Using the patches
+
+### Mounting full-file overrides
+
+Mount each patched file read-only over its module path inside the image
+(adjust the site-packages path to your image's Python version):
+
+    - ./router.py:/app/.venv/lib/python3.13/site-packages/litellm/router.py:ro
+    - ./anthropic.py:/app/.venv/lib/python3.13/site-packages/litellm/types/llms/anthropic.py:ro
+
+Mounted files take effect on container start — restart the service after
+changing them. Mounts shadow the image's files entirely: after pulling a new
+image, re-check each patch still applies, or drop the mount if upstream fixed
+the issue. Each patch directory's `.diff` is the authoritative record of what
+was changed.
+
+### Deploying callbacks
+
+1. Copy the hook file(s) into a directory mounted at `/app/callbacks/`
+   (read-only), keeping flat names:
+
+       - ./callbacks/:/app/callbacks/:ro
+
+2. Register each hook in the litellm config. Entries are
+   `callbacks.<module>.<instance>` strings, resolved relative to the config
+   file's directory:
+
+       litellm_settings:
+         callbacks:
+           - "callbacks.zai_thinking_hook.zai_thinking_hook_instance"
+           - "callbacks.team_prompt_params_hook.team_prompt_params_hook_instance"
+           - "callbacks.usage_details_patch.usage_details_patch"
+
+   No `__init__.py` is needed; each hook file must be self-contained (litellm
+   + stdlib imports only). Callbacks load at startup — restart to activate.
+
+### Notes
+
+- `supported_openai_params` shown by `/v1/model/info` comes from litellm's
+  bundled catalog (advisory). Request-parameter forwarding is governed by
+  `allowed_openai_params` on each deployment.
+- Streaming usage with `cached_tokens` requires clients to send
+  `stream_options: {"include_usage": true}`.
+
+## Disclaimer
+
+These patches were written by local LLMs with only overall guidance on how,
+where and what to patch. Use at your own risk.
