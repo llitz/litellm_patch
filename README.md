@@ -4,6 +4,10 @@ Local modifications to the [LiteLLM](https://github.com/BerriAI/litellm) proxy
 image (`ghcr.io/berriai/litellm-non_root:main-stable`), applied by mounting
 files into the container instead of maintaining a fork.
 
+**Target: litellm v1.100.0.** Per-item notes below state the version each
+item was originally written/tested against; after an image upgrade, re-check
+each patch against the new stock source (see "Using the patches").
+
 ## What's here
 
 Two kinds of modifications:
@@ -57,7 +61,7 @@ guards) — `prompt_tokens_details.cached_tokens` was silently dropped and token
 counts fell back to local recounting. This callback monkeypatches the helper
 with a coercion-safe version at import time, restoring cache-read reporting
 and correct token counts on streaming responses. Tested on `main-stable`
-2026-08 (v1.98.x).
+2026-08 (v1.98.x); also verified on v1.100.0 (2026-09).
 
 Covers the **live** streaming path only (usage arriving from the provider).
 Pairs with `004_cache_hit_usage_details`, which covers the **cache-hit**
