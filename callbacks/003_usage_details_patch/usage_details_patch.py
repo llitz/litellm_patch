@@ -11,6 +11,12 @@ This monkeypatch replaces the helper with a coercion-safe version: attribute
 access instead of dict-only guards, and model_validate coercion for foreign
 pydantic detail objects. Verified against z.ai: cached 576/620 on second call.
 
+Pairs with 004_cache_hit_usage_details: that callback covers the cache-hit
+replay path (litellm response cache serving a cached response to stream=true),
+which this one cannot reach — the details are dropped before any chunk gets
+here. Both are required for full end-to-end cache information on streaming
+responses.
+
 Loaded via litellm_settings.callbacks at proxy startup.
 """
 from litellm.integrations.custom_logger import CustomLogger

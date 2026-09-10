@@ -59,6 +59,32 @@ with a coercion-safe version at import time, restoring cache-read reporting
 and correct token counts on streaming responses. Tested on `main-stable`
 2026-08 (v1.98.x).
 
+Covers the **live** streaming path only (usage arriving from the provider).
+Pairs with `004_cache_hit_usage_details`, which covers the **cache-hit**
+replay path. Both are required for full end-to-end cache information on
+streaming responses.
+
+#### 004_cache_hit_usage_details
+
+When litellm's response cache serves a cached response to a `stream=true`
+request, `convert_to_streaming_response(_async)` (litellm
+`litellm_core_utils/llm_response_utils/convert_dict_to_response.py`) rebuilds
+the stream's `Usage` from only three scalar fields (`prompt_tokens`,
+`completion_tokens`, `total_tokens`) — `prompt_tokens_details.cached_tokens`
+and `completion_tokens_details` (reasoning tokens) were silently dropped, so
+cache-hit streams carried no cache information on the wire. The cache store
+itself keeps full fidelity; the loss happens in the re-stream conversion.
+This callback wraps both converters at import time and re-attaches the detail
+objects from the cached dict to the usage-carrying chunk (the final replay
+slice). Non-streaming cache hits were never affected (full fidelity via
+`convert_to_model_response_object`). Tested against the running container
+build, source reference v1.100.0 (2026-09).
+
+**Pairs with `003_usage_details_patch`**: 003 restores details on the live
+streaming path (provider chunks); 004 on the cache-hit replay path (cached
+dict). Both are needed for full end-to-end cache information (e.g. cached
+prompt tokens / CH% in clients) on streaming responses.
+
 ## Using the patches
 
 ### Mounting full-file overrides
