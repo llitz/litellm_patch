@@ -1,6 +1,8 @@
+diff --git a/litellm/types/llms/anthropic.py b/litellm/types/llms/anthropic.py
+index b3462203c4..4f26e186b6 100644
 --- a/litellm/types/llms/anthropic.py
 +++ b/litellm/types/llms/anthropic.py
-@@ -372,6 +372,13 @@
+@@ -410,6 +410,13 @@ class AnthropicMessagesRequestOptionalParams(TypedDict, total=False):
      output_config: AnthropicOutputConfig | None  # Configuration for Claude's output behavior
      cache_control: dict[str, Any] | None  # Automatic prompt caching
      reasoning_effort: str | None

@@ -1,6 +1,8 @@
+diff --git a/litellm/router.py b/litellm/router.py
+index c93c1753f0..e7205514ca 100644
 --- a/litellm/router.py
 +++ b/litellm/router.py
-@@ -8722,7 +8722,10 @@
+@@ -9533,7 +9533,10 @@ class Router:
          get_model_group_info, this never triggers pattern matching or deep copies, so it
          is safe to call per listed model on the /v1/models hot path.
          """
