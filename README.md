@@ -27,12 +27,13 @@ Two kinds of modification:
 | `001-alias_token_count` | `litellm/router.py` | v1.97.0, re-verified on v1.100.0 |
 | `002-anthropic_vllm_passthrough_params` | `litellm/types/llms/anthropic.py` | v1.97.0, re-verified on v1.100.0 |
 | `003-clamp_max_tokens_pre_call_skip` | `litellm/router.py` | v1.100.0 |
+| `004-hosted_vllm_keep_reasoning_content` | `litellm/llms/hosted_vllm/chat/transformation.py` | v1.100.0 |
 
-**The three patches are independent.** Each applies cleanly to pristine stock
-`v1.100.0` on its own, and applying all three in any order produces identical
+**The four patches are independent.** Each applies cleanly to pristine stock
+`v1.100.0` on its own, and applying all four in any order produces identical
 output. 001 and 003 both touch `litellm/router.py`, but in disjoint regions
 (`get_configured_token_limits` vs the pre-call-check helpers), so they do not
-conflict. Apply the subset you need.
+conflict; 002 and 004 each touch their own file. Apply the subset you need.
 
 To build a patched tree:
 
@@ -41,6 +42,7 @@ To build a patched tree:
     git apply /path/to/patches/001-alias_token_count/alias_token_count.diff
     git apply /path/to/patches/002-anthropic_vllm_passthrough_params/anthropic_vllm_passthrough_params.diff
     git apply /path/to/patches/003-clamp_max_tokens_pre_call_skip/clamp_max_tokens_pre_call_skip.diff
+    git apply /path/to/patches/004-hosted_vllm_keep_reasoning_content/hosted_vllm_keep_reasoning_content.diff
 
 `patch -p1` works equivalently. Then mount the resulting files read-only over
 their module paths (see below).
@@ -66,6 +68,7 @@ Site-packages path depends on the image's Python version; adjust as needed.
     volumes:
       - ./litellm/router.py:/app/.venv/lib/python3.13/site-packages/litellm/router.py:ro
       - ./litellm/types/llms/anthropic.py:/app/.venv/lib/python3.13/site-packages/litellm/types/llms/anthropic.py:ro
+      - ./litellm/llms/hosted_vllm/chat/transformation.py:/app/.venv/lib/python3.13/site-packages/litellm/llms/hosted_vllm/chat/transformation.py:ro
       - ./callbacks/:/app/callbacks/:ro
 
 Mounted files take effect on container start — restart the proxy after changing
