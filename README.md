@@ -65,12 +65,15 @@ responses.
 
 `005_chatgpt_session_affinity` is a self-contained callback — it modifies no
 litellm source and needs no mount beyond `/app/callbacks/`. It restores
-deterministic ChatGPT prompt-cache hits by assigning a stable per-conversation
-`session_id` (explicit header → valid `prompt_cache_key` → sha256 of
-`instructions` + first message), scoped to the Responses API route. Enable it
-with the registration line in "Deploying callbacks" below and restart; see
-`callbacks/005_chatgpt_session_affinity/README.md` for the verification probe.
-Drop it when upstream PR #42014 or #37280 lands in the deployed image.
+deterministic ChatGPT prompt-cache hits with no client configuration: as a
+deployment hook it fires only for resolutions to
+`custom_llm_provider == "chatgpt"`, on both the Responses API route and the
+chat-completions bridge, assigning a stable per-conversation `session_id`
+(explicit header → valid `prompt_cache_key` → sha256 of the conversation's
+stable prefix). Enable it with the registration line in "Deploying callbacks"
+below and restart; see `callbacks/005_chatgpt_session_affinity/README.md` for
+the verification probe. Drop it when upstream PR #42014 or #37280 lands in
+the deployed image.
 
 ## Mounting
 
