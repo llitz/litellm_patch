@@ -63,6 +63,15 @@ arriving from the provider), 004 the cache-hit replay path (usage rebuilt from
 the cached dict). Both are needed for full cache information on streaming
 responses.
 
+`005_chatgpt_session_affinity` is a self-contained callback — it modifies no
+litellm source and needs no mount beyond `/app/callbacks/`. It restores
+deterministic ChatGPT prompt-cache hits by assigning a stable per-conversation
+`session_id` (explicit header → valid `prompt_cache_key` → sha256 of
+`instructions` + first message), scoped to the Responses API route. Enable it
+with the registration line in "Deploying callbacks" below and restart; see
+`callbacks/005_chatgpt_session_affinity/README.md` for the verification probe.
+Drop it when upstream PR #42014 or #37280 lands in the deployed image.
+
 ## Mounting
 
 Site-packages path depends on the image's Python version; adjust as needed.
@@ -93,6 +102,7 @@ issue.
            - "callbacks.team_prompt_params_hook.team_prompt_params_hook_instance"
            - "callbacks.usage_details_patch.usage_details_patch"
            - "callbacks.cache_hit_details_patch.cache_hit_details_patch"
+           - "callbacks.chatgpt_session_affinity_hook.chatgpt_session_affinity_hook_instance"
 
    No `__init__.py` is needed; each hook file must be self-contained (litellm +
    stdlib imports only, no cross-imports between hook files). Callbacks load at
