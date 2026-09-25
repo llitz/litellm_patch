@@ -56,6 +56,7 @@ their module paths (see below).
 | `002_team_prompt_params` | per-team system prompt injection + parameter locking | v1.98.0 |
 | `003_usage_details_patch` | `cached_tokens` lost on live streaming usage | v1.98.x, verified v1.102.1 |
 | `004_cache_hit_usage_details` | usage details lost on cache-hit stream replay | v1.100.0, verified v1.102.1 |
+| `005_chatgpt_session_affinity` | ChatGPT prompt cache never hits: per-request random `session_id` shard | v1.102.1 |
 
 `003` and `004` are complementary: 003 covers the live streaming path (usage
 arriving from the provider), 004 the cache-hit replay path (usage rebuilt from
