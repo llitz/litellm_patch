@@ -1,11 +1,11 @@
 diff --git a/litellm/types/llms/anthropic.py b/litellm/types/llms/anthropic.py
-index b3462203c4..4f26e186b6 100644
+index b394b07f22..bdc3c003a8 100644
 --- a/litellm/types/llms/anthropic.py
 +++ b/litellm/types/llms/anthropic.py
-@@ -410,6 +410,13 @@ class AnthropicMessagesRequestOptionalParams(TypedDict, total=False):
-     output_config: AnthropicOutputConfig | None  # Configuration for Claude's output behavior
+@@ -411,6 +411,13 @@ class AnthropicMessagesRequestOptionalParams(TypedDict, total=False):
      cache_control: dict[str, Any] | None  # Automatic prompt caching
      reasoning_effort: str | None
+     safeguards: ReadOnly[Sequence[Mapping[str, object]] | None]
 +    chat_template_kwargs: dict[str, Any] | None
 +    enable_thinking: bool | None
 +    preserve_thinking: bool | None

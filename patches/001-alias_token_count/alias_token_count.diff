@@ -1,16 +1,16 @@
 diff --git a/litellm/router.py b/litellm/router.py
-index c93c1753f0..e7205514ca 100644
+index 17e2133a5a..edf85e954d 100644
 --- a/litellm/router.py
 +++ b/litellm/router.py
-@@ -9533,7 +9533,10 @@ class Router:
-         get_model_group_info, this never triggers pattern matching or deep copies, so it
-         is safe to call per listed model on the /v1/models hot path.
+@@ -10270,7 +10270,10 @@ class Router:
+         this never triggers pattern matching or deep copies, so it is safe to call per
+         listed model on the /v1/models hot path.
          """
--        deployment: Final = self.get_deployment_by_model_group_name(model_group_name=model_name)
-+        # Resolve model_group_alias so alias names inherit the token limits
-+        # configured on the target group (e.g. "qwen-27b" -> "qwen3.8-27b").
+-        indices: Final = self.model_name_to_deployment_indices.get(model_name)
++        # Resolve model_group_alias so alias names inherit the target group's
++        # deployments: limits, cost-map keys (e.g. "qwen-27b" -> "qwen3.8-27b").
 +        resolved_name: Final = resolve_model_group_alias(self.model_group_alias, model_name) or model_name
-+        deployment: Final = self.get_deployment_by_model_group_name(model_group_name=resolved_name)
-         if deployment is None:
-             return (None, None)
++        indices: Final = self.model_name_to_deployment_indices.get(resolved_name)
+         if not indices:
+             return None
  

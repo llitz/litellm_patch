@@ -17,14 +17,14 @@ BerriAI/litellm#37953 (commit `32bf1aba2`), tracked as BerriAI/litellm#41392.
 This patch deletes that one line. `thinking_blocks` removal and content-list
 flattening are untouched — only `reasoning_content` survives.
 
-- Base: litellm v1.100.0
+- Base: litellm v1.102.1
 - File: `litellm/llms/hosted_vllm/chat/transformation.py`
 - Patch: `hosted_vllm_keep_reasoning_content.diff` (`patch -p1` / `git apply`,
   from the litellm source root)
 
 ## Applying
 
-    git clone --depth 1 --branch v1.100.0 https://github.com/BerriAI/litellm
+    git clone --depth 1 --branch v1.102.1 https://github.com/BerriAI/litellm
     cd litellm
     git apply /path/to/004-hosted_vllm_keep_reasoning_content/hosted_vllm_keep_reasoning_content.diff
 
@@ -39,7 +39,9 @@ only.
 
 Independent of patches 001–003: it touches a different file
 (`litellm/llms/hosted_vllm/chat/transformation.py`), so it applies cleanly to
-pristine stock v1.100.0 on its own and in any order with the others.
+pristine stock v1.102.1 on its own and in any order with the others. The
+removal is still present in stock v1.102.1, so the patch's diff is unchanged
+from the v1.100.0 version.
 
 This increases prompt size for agentic sessions, because replayed reasoning is
 no longer discarded. That is the intended contract for reasoning models replaying

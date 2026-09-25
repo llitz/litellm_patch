@@ -4,8 +4,8 @@ Local modifications to the [LiteLLM](https://github.com/BerriAI/litellm) proxy
 image (`ghcr.io/berriai/litellm-non_root:main-stable`), applied by mounting
 files into the container instead of maintaining a fork.
 
-**Compatibility: litellm v1.100.0.** Every patch below is a diff against the
-stock `v1.100.0` tag and was verified to apply cleanly to it. Per-item notes
+**Compatibility: litellm v1.102.1.** Every patch below is a diff against the
+stock `v1.102.1` tag and was verified to apply cleanly to it. Per-item notes
 state the version each item was originally written and tested against; after an
 image upgrade, re-check each patch against the new stock source.
 
@@ -24,20 +24,21 @@ Two kinds of modification:
 
 | Patch | File modified | Base |
 |---|---|---|
-| `001-alias_token_count` | `litellm/router.py` | v1.97.0, re-verified on v1.100.0 |
-| `002-anthropic_vllm_passthrough_params` | `litellm/types/llms/anthropic.py` | v1.97.0, re-verified on v1.100.0 |
-| `003-clamp_max_tokens_pre_call_skip` | `litellm/router.py` | v1.100.0 |
-| `004-hosted_vllm_keep_reasoning_content` | `litellm/llms/hosted_vllm/chat/transformation.py` | v1.100.0 |
+| `001-alias_token_count` | `litellm/router.py` | v1.97.0, re-verified on v1.102.1 |
+| `002-anthropic_vllm_passthrough_params` | `litellm/types/llms/anthropic.py` | v1.97.0, re-verified on v1.102.1 |
+| `003-clamp_max_tokens_pre_call_skip` | `litellm/router.py` | v1.100.0, re-verified on v1.102.1 |
+| `004-hosted_vllm_keep_reasoning_content` | `litellm/llms/hosted_vllm/chat/transformation.py` | v1.100.0, re-verified on v1.102.1 |
 
 **The four patches are independent.** Each applies cleanly to pristine stock
-`v1.100.0` on its own, and applying all four in any order produces identical
+`v1.102.1` on its own, and applying all four in any order produces identical
 output. 001 and 003 both touch `litellm/router.py`, but in disjoint regions
-(`get_configured_token_limits` vs the pre-call-check helpers), so they do not
-conflict; 002 and 004 each touch their own file. Apply the subset you need.
+(the `/v1/models` token-limit lookup in `get_model_listing_info` vs the
+pre-call-check helpers), so they do not conflict; 002 and 004 each touch their
+own file. Apply the subset you need.
 
 To build a patched tree:
 
-    git clone --depth 1 --branch v1.100.0 https://github.com/BerriAI/litellm
+    git clone --depth 1 --branch v1.102.1 https://github.com/BerriAI/litellm
     cd litellm
     git apply /path/to/patches/001-alias_token_count/alias_token_count.diff
     git apply /path/to/patches/002-anthropic_vllm_passthrough_params/anthropic_vllm_passthrough_params.diff
@@ -53,8 +54,8 @@ their module paths (see below).
 |---|---|---|
 | `001_zai_thinking_fix` | `thinking` / `reasoning_effort` dropped for Z.AI models | v1.97.0 |
 | `002_team_prompt_params` | per-team system prompt injection + parameter locking | v1.98.0 |
-| `003_usage_details_patch` | `cached_tokens` lost on live streaming usage | v1.98.x, verified v1.100.0 |
-| `004_cache_hit_usage_details` | usage details lost on cache-hit stream replay | v1.100.0 |
+| `003_usage_details_patch` | `cached_tokens` lost on live streaming usage | v1.98.x, verified v1.102.1 |
+| `004_cache_hit_usage_details` | usage details lost on cache-hit stream replay | v1.100.0, verified v1.102.1 |
 
 `003` and `004` are complementary: 003 covers the live streaming path (usage
 arriving from the provider), 004 the cache-hit replay path (usage rebuilt from

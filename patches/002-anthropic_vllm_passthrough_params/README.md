@@ -6,14 +6,14 @@ stripped from requests going through the Anthropic-format endpoint
 (`/v1/messages`). This patch adds seven optional fields to the type so those
 parameters pass through to the vLLM backend.
 
-- Base: litellm v1.100.0
+- Base: litellm v1.102.1
 - File: `litellm/types/llms/anthropic.py`
 - Patch: `anthropic_vllm_passthrough_params.diff` (`patch -p1` / `git apply`,
   from the litellm source root)
 
 ## Applying
 
-    git clone --depth 1 --branch v1.100.0 https://github.com/BerriAI/litellm
+    git clone --depth 1 --branch v1.102.1 https://github.com/BerriAI/litellm
     cd litellm
     git apply /path/to/002-anthropic_vllm_passthrough_params/anthropic_vllm_passthrough_params.diff
 

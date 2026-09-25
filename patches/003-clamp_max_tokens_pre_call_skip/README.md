@@ -12,14 +12,14 @@ the estimate for those deployments and lets vLLM's own 400 carry the
 authoritative count. A client-sent `clamp_max_tokens` overrides the deployment
 default, including `false` (which re-enables the check).
 
-- Base: litellm v1.100.0
+- Base: litellm v1.102.1
 - File: `litellm/router.py`
 - Patch: `clamp_max_tokens_pre_call_skip.diff` (`patch -p1` / `git apply`,
   from the litellm source root)
 
 ## Applying
 
-    git clone --depth 1 --branch v1.100.0 https://github.com/BerriAI/litellm
+    git clone --depth 1 --branch v1.102.1 https://github.com/BerriAI/litellm
     cd litellm
     git apply /path/to/003-clamp_max_tokens_pre_call_skip/clamp_max_tokens_pre_call_skip.diff
 

@@ -1,8 +1,8 @@
 diff --git a/litellm/router.py b/litellm/router.py
-index e7205514ca..854c8bd948 100644
+index edf85e954d..1e311fe011 100644
 --- a/litellm/router.py
 +++ b/litellm/router.py
-@@ -11300,16 +11300,35 @@ class Router:
+@@ -12173,16 +12173,35 @@ class Router:
          max_input_tokens: Final = model_info.get("max_input_tokens")
          return max_input_tokens if isinstance(max_input_tokens, int) else None
  
@@ -41,16 +41,16 @@ index e7205514ca..854c8bd948 100644
          )
  
      async def _acount_pre_call_check_tokens(
-@@ -11330,7 +11349,7 @@ class Router:
+@@ -12202,7 +12221,7 @@ class Router:
+         if messages is None and input is None:
              return None
-         raw_instructions: Final = request_kwargs.get("instructions") if request_kwargs else None
          try:
 -            if not self._pre_call_checks_need_token_count(model, healthy_deployments):
 +            if not self._pre_call_checks_need_token_count(model, healthy_deployments, request_kwargs):
                  return None
-             return await asyncify(self._count_pre_call_check_tokens)(
+             return await offload_token_count(self._count_pre_call_check_tokens)(
                  messages=cast(list[dict[str, str]] | None, messages),  # cast-ok: forwarded to the sync counter
-@@ -11408,7 +11427,19 @@ class Router:
+@@ -12278,7 +12297,19 @@ class Router:
                  model_info = self.get_router_model_info(deployment=deployment, received_model_name=model)
  
                  max_input_tokens = model_info.get("max_input_tokens") if isinstance(model_info, dict) else None
