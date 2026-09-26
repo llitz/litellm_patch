@@ -57,6 +57,7 @@ their module paths (see below).
 | `003_usage_details_patch` | `cached_tokens` lost on live streaming usage | v1.98.x, verified v1.102.1 |
 | `004_cache_hit_usage_details` | usage details lost on cache-hit stream replay | v1.100.0, verified v1.102.1 |
 | `005_chatgpt_session_affinity` | ChatGPT prompt cache never hits: per-request random `session_id` shard | v1.102.1 |
+| `006_catalog_fix` | Provider catalog advertises models the subscription backends reject; `openai/*` wildcard expands to phantom models | v1.102.1 |
 
 `003` and `004` are complementary: 003 covers the live streaming path (usage
 arriving from the provider), 004 the cache-hit replay path (usage rebuilt from
@@ -74,6 +75,27 @@ stable prefix). Enable it with the registration line in "Deploying callbacks"
 below and restart; see `callbacks/005_chatgpt_session_affinity/README.md` for
 the verification probe. Drop it when upstream PR #42014 or #37280 lands in
 the deployed image.
+
+`006_catalog_fix` is a self-contained callback — it modifies no litellm
+source and needs no mount beyond `/app/callbacks/`. Litellm's bundled
+provider catalog (`litellm.model_cost`, `litellm.models_by_provider`)
+advertises every model a provider *could* serve, so subscription-gated
+backends surface phantom entries: the ChatGPT Codex backend rejects
+several `chatgpt/` entries (400 "not supported when using Codex"), the
+z.ai coding endpoint rejects `zai/glm-5-code` (error 1220), and an
+`openai/*` wildcard key expands to ~201 public-API entries this
+deployment never serves. Wildcard deployments enrich `/model/info` from
+these structures, so phantoms show up as "available" and then fail on
+every real request. The callback prunes the known-dead entries
+(`DEAD_BY_PROVIDER`) at import time and empties the `openai` provider
+set, so each provider wildcard advertises only models the plan actually
+serves; only models dead on *every* plan are listed, and pricing is
+untouched (deployment costs ride on `litellm_params`). The handle is a
+no-op `CustomLogger` instance — the callback loader requires one.
+Re-check `DEAD_BY_PROVIDER` after image upgrades or plan changes. Enable
+it with the registration line in "Deploying callbacks" below and
+restart; see `callbacks/006_catalog_fix/README.md` for the verification
+recipe.
 
 ## Mounting
 
@@ -106,6 +128,7 @@ issue.
            - "callbacks.usage_details_patch.usage_details_patch"
            - "callbacks.cache_hit_details_patch.cache_hit_details_patch"
            - "callbacks.chatgpt_session_affinity_hook.chatgpt_session_affinity_hook_instance"
+           - "callbacks.catalog_fix.catalog_fix"
 
    No `__init__.py` is needed; each hook file must be self-contained (litellm +
    stdlib imports only, no cross-imports between hook files). Callbacks load at
