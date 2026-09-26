@@ -28,13 +28,29 @@ Two kinds of modification:
 | `002-anthropic_vllm_passthrough_params` | `litellm/types/llms/anthropic.py` | v1.97.0, re-verified on v1.102.1 |
 | `003-clamp_max_tokens_pre_call_skip` | `litellm/router.py` | v1.100.0, re-verified on v1.102.1 |
 | `004-hosted_vllm_keep_reasoning_content` | `litellm/llms/hosted_vllm/chat/transformation.py` | v1.100.0, re-verified on v1.102.1 |
+| `005-model_info_access_groups` | `litellm/proxy/proxy_server.py` | v1.102.1 |
 
-**The four patches are independent.** Each applies cleanly to pristine stock
-`v1.102.1` on its own, and applying all four in any order produces identical
+**The five patches are independent.** Each applies cleanly to pristine stock
+`v1.102.1` on its own, and applying all five in any order produces identical
 output. 001 and 003 both touch `litellm/router.py`, but in disjoint regions
 (the `/v1/models` token-limit lookup in `get_model_listing_info` vs the
-pre-call-check helpers), so they do not conflict; 002 and 004 each touch their
-own file. Apply the subset you need.
+pre-call-check helpers), so they do not conflict; 002, 004 and 005 each touch
+their own file. Apply the subset you need.
+
+`005-model_info_access_groups` fixes `/model/info` and `/v1/model/info`
+returning `{"data": []}` for a key whose model access comes only from DB-backed
+team access groups — the team's `models` names the group and the grants live in
+`LiteLLM_AccessGroupTable.access_model_names` — while `/v1/models` lists the
+granted models correctly. The v1 helper `_get_v1_model_info_allowed_model_names`
+duplicates the `/v1/models` resolver `get_available_models_for_user` but omits
+DB access-group resolution, so the allowlist contains no deployable model name
+and every deployment is filtered out. The patch makes the helper async, gives it
+`prisma_client` / `user_api_key_cache` / `proxy_logging_obj` parameters and
+delegates the restricted-caller branch to that same resolver, so the two
+endpoints agree by construction; unrestricted callers keep the `None`
+short-circuit and incur no DB round-trip. Upstream fix BerriAI/litellm#41808
+(issue #41730) is open/unmerged as of 2026-09-25 — drop the patch once it lands
+in the image's litellm version.
 
 To build a patched tree:
 
@@ -44,6 +60,7 @@ To build a patched tree:
     git apply /path/to/patches/002-anthropic_vllm_passthrough_params/anthropic_vllm_passthrough_params.diff
     git apply /path/to/patches/003-clamp_max_tokens_pre_call_skip/clamp_max_tokens_pre_call_skip.diff
     git apply /path/to/patches/004-hosted_vllm_keep_reasoning_content/hosted_vllm_keep_reasoning_content.diff
+    git apply /path/to/patches/005-model_info_access_groups/model_info_access_groups.diff
 
 `patch -p1` works equivalently. Then mount the resulting files read-only over
 their module paths (see below).
@@ -105,6 +122,7 @@ Site-packages path depends on the image's Python version; adjust as needed.
       - ./litellm/router.py:/app/.venv/lib/python3.13/site-packages/litellm/router.py:ro
       - ./litellm/types/llms/anthropic.py:/app/.venv/lib/python3.13/site-packages/litellm/types/llms/anthropic.py:ro
       - ./litellm/llms/hosted_vllm/chat/transformation.py:/app/.venv/lib/python3.13/site-packages/litellm/llms/hosted_vllm/chat/transformation.py:ro
+      - ./litellm/proxy/proxy_server.py:/app/.venv/lib/python3.13/site-packages/litellm/proxy/proxy_server.py:ro
       - ./callbacks/:/app/callbacks/:ro
 
 Mounted files take effect on container start — restart the proxy after changing
