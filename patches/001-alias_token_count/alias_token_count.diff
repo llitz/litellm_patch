@@ -1,8 +1,8 @@
 diff --git a/litellm/router.py b/litellm/router.py
-index 17e2133a5a..edf85e954d 100644
+index 7d1616fc96..ae45a191c8 100644
 --- a/litellm/router.py
 +++ b/litellm/router.py
-@@ -10270,7 +10270,10 @@ class Router:
+@@ -10797,7 +10797,10 @@ class Router:
          this never triggers pattern matching or deep copies, so it is safe to call per
          listed model on the /v1/models hot path.
          """

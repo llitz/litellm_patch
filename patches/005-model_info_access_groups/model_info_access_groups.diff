@@ -1,8 +1,8 @@
 diff --git a/litellm/proxy/proxy_server.py b/litellm/proxy/proxy_server.py
-index df48ad1159..4a3939f47a 100644
+index 67fec38e39..3082c40422 100644
 --- a/litellm/proxy/proxy_server.py
 +++ b/litellm/proxy/proxy_server.py
-@@ -14927,11 +14927,23 @@ def _deployment_matches_allowed_model_names(model: dict[str, JsonValue], allowed
+@@ -16295,11 +16295,23 @@ def _deployment_matches_allowed_model_names(model: dict[str, JsonValue], allowed
      return isinstance(team_public_model_name, str) and team_public_model_name in allowed_model_names
  
  
@@ -28,7 +28,7 @@ index df48ad1159..4a3939f47a 100644
      model_access_groups: Final = llm_router.get_model_access_groups()
      proxy_model_list: Final = llm_router.get_model_names()
      key_models: Final = get_key_models(
-@@ -14946,17 +14958,19 @@ def _get_v1_model_info_allowed_model_names(
+@@ -16314,17 +16326,19 @@ def _get_v1_model_info_allowed_model_names(
      )
      if not key_models and not team_models:
          return None
@@ -58,7 +58,7 @@ index df48ad1159..4a3939f47a 100644
  
  
  def _filter_v1_model_info_deployments(
-@@ -15192,9 +15206,12 @@ async def model_info_v1(
+@@ -16532,9 +16546,12 @@ async def model_info_v1(
  
      all_models = expand_wildcard_deployments_for_model_info(all_models)
  

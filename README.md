@@ -4,8 +4,8 @@ Local modifications to the [LiteLLM](https://github.com/BerriAI/litellm) proxy
 image (`ghcr.io/berriai/litellm-non_root:main-stable`), applied by mounting
 files into the container instead of maintaining a fork.
 
-**Compatibility: litellm v1.102.1.** Every patch below is a diff against the
-stock `v1.102.1` tag and was verified to apply cleanly to it. Per-item notes
+**Compatibility: litellm v1.106.0.** Every patch below is a diff against the
+stock `v1.106.0` tag and was verified to apply cleanly to it. Per-item notes
 state the version each item was originally written and tested against; after an
 image upgrade, re-check each patch against the new stock source.
 
@@ -24,18 +24,22 @@ Two kinds of modification:
 
 | Patch | File modified | Base |
 |---|---|---|
-| `001-alias_token_count` | `litellm/router.py` | v1.97.0, re-verified on v1.102.1 |
-| `002-anthropic_vllm_passthrough_params` | `litellm/types/llms/anthropic.py` | v1.97.0, re-verified on v1.102.1 |
-| `003-clamp_max_tokens_pre_call_skip` | `litellm/router.py` | v1.100.0, re-verified on v1.102.1 |
-| `004-hosted_vllm_keep_reasoning_content` | `litellm/llms/hosted_vllm/chat/transformation.py` | v1.100.0, re-verified on v1.102.1 |
-| `005-model_info_access_groups` | `litellm/proxy/proxy_server.py` | v1.102.1 |
+| `001-alias_token_count` | `litellm/router.py` | v1.97.0, re-verified on v1.106.0 |
+| `002-anthropic_vllm_passthrough_params` | `litellm/types/llms/anthropic.py` | v1.97.0, re-verified on v1.106.0 |
+| `003-clamp_max_tokens_pre_call_skip` | `litellm/router.py` | v1.100.0, re-verified on v1.106.0 |
+| `005-model_info_access_groups` | `litellm/proxy/proxy_server.py` | v1.102.1, re-verified on v1.106.0 |
 
-**The five patches are independent.** Each applies cleanly to pristine stock
-`v1.102.1` on its own, and applying all five in any order produces identical
-output. 001 and 003 both touch `litellm/router.py`, but in disjoint regions
-(the `/v1/models` token-limit lookup in `get_model_listing_info` vs the
-pre-call-check helpers), so they do not conflict; 002, 004 and 005 each touch
-their own file. Apply the subset you need.
+**Four patches.** Each applies cleanly to pristine stock `v1.106.0` on its own.
+001 and 003 both touch `litellm/router.py` but in disjoint regions (the
+`/v1/models` token-limit lookup vs the pre-call-check helpers), so they do not
+conflict; apply **001 before 003** (003's diff context is cut against the
+001-applied file, so out-of-order application still yields identical source but
+may leave a `router.py.orig` backup). 002 and 005 each touch their own file.
+Apply the subset you need.
+
+`004-hosted_vllm_keep_reasoning_content` was retired: upstream PR #43599
+(commit `657bb777fa`, shipped in v1.106.0) keeps string `reasoning_content` on
+replayed assistant messages, which is what that patch did.
 
 `005-model_info_access_groups` fixes `/model/info` and `/v1/model/info`
 returning `{"data": []}` for a key whose model access comes only from DB-backed
@@ -54,12 +58,11 @@ in the image's litellm version.
 
 To build a patched tree:
 
-    git clone --depth 1 --branch v1.102.1 https://github.com/BerriAI/litellm
+    git clone --depth 1 --branch v1.106.0 https://github.com/BerriAI/litellm
     cd litellm
     git apply /path/to/patches/001-alias_token_count/alias_token_count.diff
     git apply /path/to/patches/002-anthropic_vllm_passthrough_params/anthropic_vllm_passthrough_params.diff
     git apply /path/to/patches/003-clamp_max_tokens_pre_call_skip/clamp_max_tokens_pre_call_skip.diff
-    git apply /path/to/patches/004-hosted_vllm_keep_reasoning_content/hosted_vllm_keep_reasoning_content.diff
     git apply /path/to/patches/005-model_info_access_groups/model_info_access_groups.diff
 
 `patch -p1` works equivalently. Then mount the resulting files read-only over
@@ -71,10 +74,10 @@ their module paths (see below).
 |---|---|---|
 | `001_zai_thinking_fix` | `thinking` / `reasoning_effort` dropped for Z.AI models | v1.97.0 |
 | `002_team_prompt_params` | per-team system prompt injection + parameter locking | v1.98.0 |
-| `003_usage_details_patch` | `cached_tokens` lost on live streaming usage | v1.98.x, verified v1.102.1 |
-| `004_cache_hit_usage_details` | usage details lost on cache-hit stream replay | v1.100.0, verified v1.102.1 |
-| `005_chatgpt_session_affinity` | ChatGPT prompt cache never hits: per-request random `session_id` shard | v1.102.1 |
-| `006_catalog_fix` | Provider catalog advertises models the subscription backends reject; `openai/*` wildcard expands to phantom models | v1.102.1 |
+| `003_usage_details_patch` | `cached_tokens` lost on live streaming usage | v1.98.x, verified v1.106.0 |
+| `004_cache_hit_usage_details` | usage details lost on cache-hit stream replay | v1.100.0, verified v1.106.0 |
+| `005_chatgpt_session_affinity` | ChatGPT prompt cache never hits: per-request random `session_id` shard | v1.102.1, verified v1.106.0 |
+| `006_catalog_fix` | Provider catalog advertises models the subscription backends reject; `openai/*` wildcard expands to phantom models | v1.102.1, verified v1.106.0 |
 
 `003` and `004` are complementary: 003 covers the live streaming path (usage
 arriving from the provider), 004 the cache-hit replay path (usage rebuilt from
@@ -121,7 +124,6 @@ Site-packages path depends on the image's Python version; adjust as needed.
     volumes:
       - ./litellm/router.py:/app/.venv/lib/python3.13/site-packages/litellm/router.py:ro
       - ./litellm/types/llms/anthropic.py:/app/.venv/lib/python3.13/site-packages/litellm/types/llms/anthropic.py:ro
-      - ./litellm/llms/hosted_vllm/chat/transformation.py:/app/.venv/lib/python3.13/site-packages/litellm/llms/hosted_vllm/chat/transformation.py:ro
       - ./litellm/proxy/proxy_server.py:/app/.venv/lib/python3.13/site-packages/litellm/proxy/proxy_server.py:ro
       - ./callbacks/:/app/callbacks/:ro
 

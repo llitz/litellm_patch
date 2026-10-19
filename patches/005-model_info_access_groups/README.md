@@ -23,14 +23,14 @@ Upstream: issue BerriAI/litellm#41730, fix BerriAI/litellm#41808 —
 open/unmerged at apply time (2026-09-25). This is that PR applied source-only;
 the upstream test hunks are not vendored.
 
-- Base: litellm v1.102.1
+- Base: litellm v1.106.0
 - File: `litellm/proxy/proxy_server.py`
 - Patch: `model_info_access_groups.diff` (`patch -p1` / `git apply`,
   from the litellm source root)
 
 ## Applying
 
-    git clone --depth 1 --branch v1.102.1 https://github.com/BerriAI/litellm
+    git clone --depth 1 --branch v1.106.0 https://github.com/BerriAI/litellm
     cd litellm
     git apply /path/to/005-model_info_access_groups/model_info_access_groups.diff
 
@@ -45,7 +45,7 @@ only.
 
 Independent of patches 001–004: it touches a different file
 (`litellm/proxy/proxy_server.py`), so it applies cleanly to pristine stock
-v1.102.1 on its own and in any order with the others.
+v1.106.0 on its own and in any order with the others.
 
 `proxy_server.py` is a large module — mounting it shadows every other local
 change to that file, so re-apply them to the patched copy if you have any.
